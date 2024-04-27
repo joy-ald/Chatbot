@@ -1,0 +1,46 @@
+# chatbot that learns from user input
+# A json file is passed which records the question and answer everytime the computer learns something new
+
+
+import json
+
+def load_memory(memory_file):
+    try:
+        with open(memory_file, 'r') as file:
+            memory = json.load(file)
+    except FileNotFoundError:
+        memory = {}
+    return memory
+
+def save_memory(memory, memory_file):
+    with open(memory_file, 'w') as file:
+        json.dump(memory, file, indent=4)
+
+def chatbot(memory_file):
+    print("Chatbot: Hello! I'm a learning chatbot.")
+    memory = load_memory(memory_file)
+
+    while True:
+        print("Chatbot: Waiting for user input...")
+        user_input = input("User: ").strip().lower()
+        print("User input:", user_input)  
+
+        if user_input == "exit":
+            break
+
+        if user_input in memory:
+            print("Chatbot: Found answer in memory! The answer is ", memory[user_input])
+            
+        else:
+            print("Chatbot: I don't know the answer. Can you please teach me ?")
+            new_answer = input("User: ").strip()
+            print("New answer provided by user:", new_answer)  
+            memory[user_input] = new_answer
+            save_memory(memory, memory_file)
+            print("Chatbot: Thanks for teaching me!")
+    
+    print("Chatbot: Goodbye!")
+
+
+memory_file = "chatbot_memory.json"
+chatbot(memory_file)
