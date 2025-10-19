@@ -1,0 +1,45 @@
+# this chatbot has a RAG model, where user can upload  apdf and ask questions that can be answered based ont he info in the pdf file.
+
+# Step 1: Install dependencies
+!pip install langchain langchain-huggingface sentence_transformers faiss-cpu pypdf langchain-community
+
+# Step 2: Import libraries
+from google.colab import files
+from langchain_community.document_loaders import PyPDFLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.vectorstores import FAISS
+from langchain.chains import RetrievalQA
+from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
+
+# Step 3: Upload PDF
+uploaded_files = files.upload()
+pdf_path = next(iter(uploaded_files))  # Get filename of uploaded PDF
+
+# Step 4: Load and split PDF into chunks
+loader = PyPDFLoader(pdf_path)
+documents = loader.load()
+
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+texts = text_splitter.split_documents(documents)
+
+# Step 5: Create embeddings
+embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+
+# Step 6: Build vector store
+vectorstore = FAISS.from_documents(texts, embeddings)
+
+# Step 7: Setup LLM (replace 'your_hf_api_key' with your actual Hugging Face API token)
+llm = HuggingFaceEndpoint(
+    repo_id="mistralai/Mistral-7B-Instruct-v0.2",
+    huggingfacehub_api_token="write_permission_api_token"
+)
+bot = ChatHuggingFace(llm=llm)
+
+# Step 8: Setup retrieval QA chain
+qa = RetrievalQA.from_chain_type(llm=bot, retriever=vectorstore.as_retriever(search_kwargs={"k": 3}))
+
+# Step 9: Query the RAG system
+query = "What are the main topics discussed in this document?"
+answer = qa.run(query)
+print("Answer:", answer)
